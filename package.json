@@ -1,0 +1,21 @@
+{
+  "name": "lzd-shp-order-notification",
+  "version": "1.0.0",
+  "description": "Notify the Packaging team on LINE when new orders arrive from Lazada and Shopee.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "poll": "node src/poller.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  },
+  "license": "MIT"
+}
