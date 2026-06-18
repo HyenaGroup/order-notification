@@ -17,7 +17,9 @@ function load() {
   try {
     const raw = fs.readFileSync(FILE, 'utf8');
     seen = new Set(JSON.parse(raw));
-  } catch {
+    console.log(`[store] Loaded ${seen.size} seen orders from ${FILE}`);
+  } catch (err) {
+    console.log(`[store] No existing store found at ${FILE}, starting fresh`);
     seen = new Set();
   }
 }

@@ -20,18 +20,47 @@ app.use(
 app.get('/', (_req, res) => res.send('OK — LZD/SHP order notifier running'));
 app.get('/healthz', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
+// ---- Diagnostic endpoint to test LINE integration ----
+app.get('/test-line', async (_req, res) => {
+  try {
+    console.log('[test] Testing LINE notification...');
+    const testMessage = {
+      type: 'text',
+      text: '🧪 Test notification from Railway deployment\nIf you see this, LINE integration is working! ✅'
+    };
+    
+    const { pushMessages } = await import('./line.js');
+    await pushMessages([testMessage]);
+    
+    res.json({ 
+      success: true, 
+      message: 'Test notification sent successfully!',
+      targetId: config.line.targetId 
+    });
+  } catch (err) {
+    console.error('[test] ❌ LINE test failed:', err.message);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      targetId: config.line.targetId,
+      hint: 'Check Railway logs for detailed error information'
+    });
+  }
+});
+
 // ============================================================
 //  Shopee push endpoint
 //  Configure this URL in Shopee Console > Push Mechanism > "Live Push URL".
 //  Shopee order-status pushes arrive with code = 3.
 // ============================================================
 app.post('/webhook/shopee', async (req, res) => {
+  console.log('[shopee] ✉ Webhook received');
   const callbackUrl = `${config.publicBaseUrl}/webhook/shopee`;
   const auth = req.headers['authorization'] || '';
   const rawBody = req.rawBody?.toString('utf8') || '';
 
   if (config.publicBaseUrl && !shopee.verifyShopeePush(callbackUrl, rawBody, auth)) {
-    console.warn('[shopee] signature mismatch — rejecting');
+    console.warn('[shopee] ❌ Signature mismatch — rejecting');
     return res.status(401).send('invalid signature');
   }
 
@@ -40,21 +69,38 @@ app.post('/webhook/shopee', async (req, res) => {
 
   try {
     const body = req.body || {};
+    console.log(`[shopee] Push code: ${body.code}, data:`, JSON.stringify(body.data || {}).substring(0, 200));
+    
     // code 3 = order status push. Newly created orders surface here.
-    if (body.code !== 3) return;
+    if (body.code !== 3) {
+      console.log(`[shopee] Ignoring non-order push (code ${body.code})`);
+      return;
+    }
     const orderSn = body.data?.ordersn || body.data?.order_sn;
     const status = body.data?.status;
-    if (!orderSn) return;
+    if (!orderSn) {
+      console.warn('[shopee] ⚠ No order_sn in push data');
+      return;
+    }
 
+    console.log(`[shopee] Processing order ${orderSn}, status: ${status}`);
+    
     // Only notify for fresh, packable orders (ignore CANCELLED/SHIPPED echoes).
     const packable = ['READY_TO_SHIP', 'UNPAID', 'PROCESSED', 'TO_SHIP'];
-    if (status && !packable.includes(status)) return;
+    if (status && !packable.includes(status)) {
+      console.log(`[shopee] Skipping non-packable status: ${status}`);
+      return;
+    }
 
     const details = await shopee.getOrderDetail(orderSn);
-    if (!details.length) return;
+    if (!details.length) {
+      console.warn(`[shopee] ⚠ No details returned for order ${orderSn}`);
+      return;
+    }
     await notifyOrder(shopee.normalizeShopeeOrder(details[0]));
   } catch (err) {
-    console.error('[shopee] handler error:', err.message);
+    console.error('[shopee] ❌ Handler error:', err.message);
+    console.error('[shopee] Stack:', err.stack);
   }
 });
 
@@ -64,33 +110,48 @@ app.post('/webhook/shopee', async (req, res) => {
 //  Lazada sends a verification challenge when you save the URL.
 // ============================================================
 app.post('/webhook/lazada', async (req, res) => {
+  console.log('[lazada] ✉ Webhook received');
   // Verification handshake: Lazada may POST a challenge to confirm ownership.
   const body = req.body || {};
   if (body.challenge) {
+    console.log('[lazada] Responding to challenge handshake');
     return res.status(200).json({ challenge: body.challenge });
   }
 
   res.status(200).send('ok'); // ACK fast; process async.
 
   try {
+    console.log('[lazada] Push payload:', JSON.stringify(body).substring(0, 300));
     // Order push payload carries the trade order id + new status.
     const data = body.data || body;
     const orderId = data.trade_order_id || data.order_id;
     const status = data.order_status || data.status;
-    if (!orderId) return;
+    if (!orderId) {
+      console.warn('[lazada] ⚠ No order_id in push data');
+      return;
+    }
 
+    console.log(`[lazada] Processing order ${orderId}, status: ${status}`);
+    
     // Only notify for new/pending orders ready to pack.
     const packable = ['pending', 'ready_to_ship', 'packed'];
-    if (status && !packable.includes(String(status).toLowerCase())) return;
+    if (status && !packable.includes(String(status).toLowerCase())) {
+      console.log(`[lazada] Skipping non-packable status: ${status}`);
+      return;
+    }
 
     const [order, items] = await Promise.all([
       lazada.getOrder(orderId),
       lazada.getOrderItems(orderId).catch(() => []),
     ]);
-    if (!order) return;
+    if (!order) {
+      console.warn(`[lazada] ⚠ No order data returned for ${orderId}`);
+      return;
+    }
     await notifyOrder(lazada.normalizeLazadaOrder(order, items));
   } catch (err) {
-    console.error('[lazada] handler error:', err.message);
+    console.error('[lazada] ❌ Handler error:', err.message);
+    console.error('[lazada] Stack:', err.stack);
   }
 });
 

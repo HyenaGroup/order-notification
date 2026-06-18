@@ -7,14 +7,21 @@ function required(name, value) {
   return value;
 }
 
+function strictRequired(name, value) {
+  if (!value || String(value).trim() === '') {
+    throw new Error(`[config] FATAL: ${name} is required but not set. Check your environment variables.`);
+  }
+  return value;
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
 
   line: {
-    channelAccessToken: required('LINE_CHANNEL_ACCESS_TOKEN', process.env.LINE_CHANNEL_ACCESS_TOKEN),
-    channelSecret: required('LINE_CHANNEL_SECRET', process.env.LINE_CHANNEL_SECRET),
-    targetId: required('LINE_TARGET_ID', process.env.LINE_TARGET_ID),
+    channelAccessToken: strictRequired('LINE_CHANNEL_ACCESS_TOKEN', process.env.LINE_CHANNEL_ACCESS_TOKEN),
+    channelSecret: strictRequired('LINE_CHANNEL_SECRET', process.env.LINE_CHANNEL_SECRET),
+    targetId: strictRequired('LINE_TARGET_ID', process.env.LINE_TARGET_ID),
     pushUrl: 'https://api.line.me/v2/bot/message/push',
   },
 
@@ -38,5 +45,18 @@ export const config = {
     intervalSeconds: parseInt(process.env.POLL_INTERVAL_SECONDS || '120', 10),
   },
 };
+
+// Log configuration status on startup
+console.log('[config] Configuration loaded:');
+console.log(`  PORT: ${config.port}`);
+console.log(`  PUBLIC_BASE_URL: ${config.publicBaseUrl || '(not set)'}`);
+console.log(`  LINE_TARGET_ID: ${config.line.targetId ? config.line.targetId.substring(0, 5) + '...' : '(missing)'}`);
+console.log(`  LINE_CHANNEL_ACCESS_TOKEN: ${config.line.channelAccessToken ? '✓ set (' + config.line.channelAccessToken.length + ' chars)' : '✗ missing'}`);
+console.log(`  LAZADA_APP_KEY: ${config.lazada.appKey ? '✓ set' : '✗ missing'}`);
+console.log(`  LAZADA_ACCESS_TOKEN: ${config.lazada.accessToken ? '✓ set' : '✗ missing'}`);
+console.log(`  SHOPEE_PARTNER_ID: ${config.shopee.partnerId ? '✓ set' : '✗ missing'}`);
+console.log(`  SHOPEE_ACCESS_TOKEN: ${config.shopee.accessToken ? '✓ set' : '✗ missing'}`);
+console.log(`  POLLING: ${config.polling.enabled ? 'enabled' : 'disabled'}`);
+console.log(`  DATA_DIR: ${process.env.DATA_DIR || '(using default ./data)'}`);
 
 export default config;

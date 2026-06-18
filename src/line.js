@@ -33,20 +33,30 @@ export async function pushMessages(messages, to = config.line.targetId) {
     throw new Error('No LINE target id (set LINE_TARGET_ID or pass "to")');
   }
 
+  console.log(`[line] Attempting to push ${messages.length} message(s) to target: ${to}`);
+  
+  const payload = { to, messages };
   const res = await fetch(config.line.pushUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${config.line.channelAccessToken}`,
     },
-    body: JSON.stringify({ to, messages }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
+    console.error(`[line] ❌ Push FAILED - Status: ${res.status}`);
+    console.error(`[line] Response: ${detail}`);
+    console.error(`[line] Target ID: ${to}`);
+    console.error(`[line] Token length: ${config.line.channelAccessToken.length}`);
     throw new Error(`LINE push failed (${res.status}): ${detail}`);
   }
-  return res.json().catch(() => ({}));
+  
+  const result = await res.json().catch(() => ({}));
+  console.log(`[line] ✓ Push successful to ${to}`);
+  return result;
 }
 
 /** Convenience: push a single plain-text message. */

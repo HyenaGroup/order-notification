@@ -166,6 +166,12 @@ Service → **Settings → Networking → Generate Domain**. Copy it into
 Railway redeploys on every push. Check **Deploy Logs** for the startup banner
 and `/healthz` (used as the healthcheck) to confirm it's live.
 
+### 6. Test the integration
+
+Visit `https://<your-domain>/test-line` to send a test notification and verify
+LINE integration is working. See **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** if
+notifications aren't being sent.
+
 > **Tip:** Instead of a volume you can swap `src/store.js` for Railway's managed
 > **Redis** plugin — same `isNew` / `markSeen` interface. Best if you run more
 > than one replica (a file volume isn't shared across replicas).
