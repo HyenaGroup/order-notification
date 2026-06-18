@@ -131,8 +131,15 @@ export async function notifyOrder(order, shippingLabelUrl = null) {
     console.log(`[notify] Including shipping label URL`);
   }
   
-  await pushMessages([buildFlexMessage(order)]);
-  console.log(`[notify] sent ${key} (${order.itemCount} items)${shippingLabelUrl ? ' with shipping label' : ''}`);
+  // Send to all configured LINE groups
+  const message = buildFlexMessage(order);
+  const { default: config } = await import('./config.js');
+  
+  for (const targetId of config.line.targetIds) {
+    await pushMessages([message], targetId);
+  }
+  
+  console.log(`[notify] sent ${key} to ${config.line.targetIds.length} group(s) (${order.itemCount} items)${shippingLabelUrl ? ' with shipping label' : ''}`);
   return true;
 }
 

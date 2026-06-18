@@ -76,6 +76,8 @@ cp .env.example .env   # then fill in .env (Windows: copy .env.example .env)
    - Invite the bot into your Packaging group, then send any message in the group.
    - This service logs `[line] event=message type=group id=Cxxxx…`.
    - Copy that `Cxxxx…` value into `LINE_TARGET_ID`.
+   - **For multiple groups:** Use comma-separated IDs: `C_group1,C_group2,C_group3`
+     (see **[MULTIPLE-GROUPS.md](MULTIPLE-GROUPS.md)** for details)
 
 ### 2. Lazada — app + push callback
 

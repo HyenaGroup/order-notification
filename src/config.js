@@ -22,6 +22,8 @@ export const config = {
     channelAccessToken: strictRequired('LINE_CHANNEL_ACCESS_TOKEN', process.env.LINE_CHANNEL_ACCESS_TOKEN),
     channelSecret: strictRequired('LINE_CHANNEL_SECRET', process.env.LINE_CHANNEL_SECRET),
     targetId: strictRequired('LINE_TARGET_ID', process.env.LINE_TARGET_ID),
+    // Support multiple groups: comma-separated IDs
+    targetIds: process.env.LINE_TARGET_ID.split(',').map(id => id.trim()).filter(Boolean),
     pushUrl: 'https://api.line.me/v2/bot/message/push',
   },
 
@@ -51,6 +53,10 @@ console.log('[config] Configuration loaded:');
 console.log(`  PORT: ${config.port}`);
 console.log(`  PUBLIC_BASE_URL: ${config.publicBaseUrl || '(not set)'}`);
 console.log(`  LINE_TARGET_ID: ${config.line.targetId ? config.line.targetId.substring(0, 5) + '...' : '(missing)'}`);
+console.log(`  LINE_TARGET_GROUPS: ${config.line.targetIds.length} group(s) configured`);
+config.line.targetIds.forEach((id, idx) => {
+  console.log(`    [${idx + 1}] ${id.substring(0, 5)}...`);
+});
 console.log(`  LINE_CHANNEL_ACCESS_TOKEN: ${config.line.channelAccessToken ? '✓ set (' + config.line.channelAccessToken.length + ' chars)' : '✗ missing'}`);
 console.log(`  LAZADA_APP_KEY: ${config.lazada.appKey ? '✓ set' : '✗ missing'}`);
 console.log(`  LAZADA_ACCESS_TOKEN: ${config.lazada.accessToken ? '✓ set' : '✗ missing'}`);
