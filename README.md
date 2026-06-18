@@ -23,6 +23,7 @@ for environments that can't expose a public URL.
 
 - Receives order-status pushes from Lazada and Shopee and verifies their signatures.
 - Fetches full order details (buyer, items, SKUs, quantities, ship-to).
+- **Automatically fetches Lazada shipping labels (PDF)** and includes download button.
 - Formats a clear "PACK THIS" card and pushes it to your Packaging LINE group.
 - **Deduplicates** so the team never gets the same order twice (platforms retry).
 - Optional **poller** if you can't host a public webhook.
@@ -198,6 +199,10 @@ polling adds delay and uses more API quota.
 A colored card (Lazada navy / Shopee orange) with header **"NEW … ORDER"**,
 order number, buyer, item count, total, ship-to, status, and a **PACK THIS**
 list of `qty × item — variation` plus the SKU list for picking.
+
+**For Lazada orders:** Includes a **📄 ดาวน์โหลดฉลากจัดส่ง (Shipping Label)**
+button that downloads the PDF shipping label directly. See
+**[SHIPPING-LABELS.md](SHIPPING-LABELS.md)** for details.
 
 ---
 

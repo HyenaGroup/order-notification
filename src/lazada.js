@@ -25,8 +25,9 @@ export function signLazada(apiPath, params) {
  * Call a Lazada REST endpoint (GET).
  * @param {string} apiPath e.g. "/orders/get"
  * @param {Record<string,string>} [bizParams] business params
+ * @param {boolean} [returnRaw] if true, return raw Response instead of JSON
  */
-export async function callLazada(apiPath, bizParams = {}) {
+export async function callLazada(apiPath, bizParams = {}, returnRaw = false) {
   const sysParams = {
     app_key: config.lazada.appKey,
     access_token: config.lazada.accessToken,
@@ -40,6 +41,11 @@ export async function callLazada(apiPath, bizParams = {}) {
   const url = `${config.lazada.apiBase}${apiPath}?${qs}`;
 
   const res = await fetch(url);
+  
+  if (returnRaw) {
+    return res;
+  }
+  
   const json = await res.json().catch(() => ({}));
   if (json.code && json.code !== '0') {
     throw new Error(`Lazada ${apiPath} error ${json.code}: ${json.message || ''}`);
@@ -101,4 +107,56 @@ export function normalizeLazadaOrder(order, items = []) {
   };
 }
 
-export default { signLazada, callLazada, getOrder, getOrderItems, getOrders, normalizeLazadaOrder };
+/**
+ * Get shipping label document URL for one or more order items.
+ * Returns a URL to download the PDF shipping label (ฉลากจัดส่ง).
+ * @param {string[]} orderItemIds - Array of trade_order_line_id values
+ * @returns {Promise<string>} URL to the PDF document
+ */
+export async function getShippingLabel(orderItemIds) {
+  const json = await callLazada('/order/document/get', {
+    doc_type: 'shippingLabel',
+    order_item_ids: JSON.stringify(orderItemIds),
+  });
+  
+  if (json.data?.document?.file) {
+    return json.data.document.file;
+  }
+  
+  throw new Error('No shipping label URL returned from Lazada');
+}
+
+/**
+ * Get shipping label for an entire order (all items).
+ * @param {string} orderId - The trade_order_id
+ * @returns {Promise<string>} URL to the PDF shipping label
+ */
+export async function getOrderShippingLabel(orderId) {
+  // First get order items to extract line IDs
+  const items = await getOrderItems(orderId);
+  if (!items.length) {
+    throw new Error(`No items found for order ${orderId}`);
+  }
+  
+  const orderItemIds = items
+    .map(item => item.order_item_id)
+    .filter(Boolean);
+  
+  if (!orderItemIds.length) {
+    throw new Error(`No valid order_item_ids found for order ${orderId}`);
+  }
+  
+  console.log(`[lazada] Fetching shipping label for ${orderItemIds.length} item(s)`);
+  return getShippingLabel(orderItemIds);
+}
+
+export default { 
+  signLazada, 
+  callLazada, 
+  getOrder, 
+  getOrderItems, 
+  getOrders, 
+  normalizeLazadaOrder,
+  getShippingLabel,
+  getOrderShippingLabel,
+};

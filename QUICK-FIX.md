@@ -112,6 +112,17 @@ Railway Variables tab should have:
 - [ ] Volume mounted at `/data`
 - [ ] Lazada webhook URL configured
 - [ ] `PUBLIC_BASE_URL` matches Railway domain
+- [ ] Shipping label button appears in Lazada order notifications
+
+---
+
+## 📄 Shipping Labels (ฉลากจัดส่ง)
+
+**NEW:** Lazada orders now include automatic shipping label download!
+
+- **In LINE:** Click **📄 ดาวน์โหลดฉลากจัดส่ง** button to download PDF
+- **Manual download:** `https://your-domain.up.railway.app/shipping-label/ORDER_ID`
+- **Details:** See [SHIPPING-LABELS.md](SHIPPING-LABELS.md)
 
 ---
 

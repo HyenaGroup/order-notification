@@ -48,6 +48,26 @@ app.get('/test-line', async (_req, res) => {
   }
 });
 
+// ---- Get shipping label for a specific Lazada order ----
+app.get('/shipping-label/:orderId', async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    console.log(`[label] Fetching shipping label for order ${orderId}`);
+    
+    const labelUrl = await lazada.getOrderShippingLabel(orderId);
+    
+    // Redirect to the PDF URL so it downloads directly
+    res.redirect(labelUrl);
+  } catch (err) {
+    console.error(`[label] ❌ Failed to get shipping label: ${err.message}`);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      hint: 'Make sure the order ID is correct and the order has a shipping label available'
+    });
+  }
+});
+
 // ============================================================
 //  Shopee push endpoint
 //  Configure this URL in Shopee Console > Push Mechanism > "Live Push URL".
@@ -148,7 +168,17 @@ app.post('/webhook/lazada', async (req, res) => {
       console.warn(`[lazada] ⚠ No order data returned for ${orderId}`);
       return;
     }
-    await notifyOrder(lazada.normalizeLazadaOrder(order, items));
+    
+    // Fetch shipping label PDF URL for packaging team
+    let shippingLabelUrl = null;
+    try {
+      shippingLabelUrl = await lazada.getOrderShippingLabel(orderId);
+      console.log(`[lazada] ✓ Shipping label URL obtained`);
+    } catch (err) {
+      console.warn(`[lazada] ⚠ Could not fetch shipping label: ${err.message}`);
+    }
+    
+    await notifyOrder(lazada.normalizeLazadaOrder(order, items), shippingLabelUrl);
   } catch (err) {
     console.error('[lazada] ❌ Handler error:', err.message);
     console.error('[lazada] Stack:', err.stack);

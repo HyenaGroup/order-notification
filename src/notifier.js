@@ -9,6 +9,7 @@ const PLATFORM_COLOR = {
 /** Build a LINE Flex Message bubble for one normalized order. */
 export function buildFlexMessage(order) {
   const color = PLATFORM_COLOR[order.platform] || '#333333';
+  const hasShippingLabel = order.shippingLabelUrl && order.platform === 'Lazada';
 
   const itemRows = (order.products || []).slice(0, 12).map((p) => ({
     type: 'box',
@@ -74,9 +75,21 @@ export function buildFlexMessage(order) {
       footer: {
         type: 'box',
         layout: 'vertical',
+        spacing: 'sm',
         contents: [
-          { type: 'text', text: order.createdAt || '', size: 'xs', color: '#AAAAAA', align: 'center' },
-        ],
+          hasShippingLabel ? {
+            type: 'button',
+            action: {
+              type: 'uri',
+              label: '📄 ดาวน์โหลดฉลากจัดส่ง (Shipping Label)',
+              uri: order.shippingLabelUrl,
+            },
+            style: 'primary',
+            color: color,
+            height: 'sm',
+          } : null,
+          { type: 'text', text: order.createdAt || '', size: 'xs', color: '#AAAAAA', align: 'center', margin: hasShippingLabel ? 'sm' : 'none' },
+        ].filter(Boolean),
       },
     },
   };
@@ -95,17 +108,26 @@ function kv(label, value) {
 
 /**
  * Notify the Packaging team about a normalized order, deduplicated.
+ * @param {object} order - Normalized order object
+ * @param {string} [shippingLabelUrl] - Optional shipping label PDF URL
  * @returns {Promise<boolean>} true if a notification was sent, false if duplicate
  */
-export async function notifyOrder(order) {
+export async function notifyOrder(order, shippingLabelUrl = null) {
   const key = `${order.platform}:${order.orderId}`;
   if (!isNew(key)) {
     console.log(`[notify] skip duplicate ${key}`);
     return false;
   }
+  
+  // Add shipping label URL to order object if provided
+  if (shippingLabelUrl) {
+    order.shippingLabelUrl = shippingLabelUrl;
+    console.log(`[notify] Including shipping label URL`);
+  }
+  
   await pushMessages([buildFlexMessage(order)]);
   markSeen(key);
-  console.log(`[notify] sent ${key} (${order.itemCount} items)`);
+  console.log(`[notify] sent ${key} (${order.itemCount} items)${shippingLabelUrl ? ' with shipping label' : ''}`);
   return true;
 }
 
