@@ -83,10 +83,24 @@ Your packaging team can bookmark this URL pattern and just change the order ID w
 - Orders with status: `pending`, `ready_to_ship`, `packed`
 - PDF downloads work on mobile (LINE app) and desktop
 
-### ⚠️ Limitations
-- Shipping labels are only available **after** Lazada generates them
-- Very new orders (just created) might not have labels yet
-- If label fetch fails, notification still sends (just without the button)
+### ⚠️ Limitations & When Labels Are Available
+
+**Shipping labels are only available for certain order statuses:**
+
+✅ **`ready_to_ship`** - Label available, button will appear
+✅ **`packed`** - Label available, button will appear
+❌ **`pending`** - Label NOT available yet (order just created, not confirmed)
+❌ **`unpaid`** - Label NOT available (payment not received)
+
+**What happens:**
+- **Pending orders:** Notification sent WITHOUT button (label not ready)
+- **Ready to ship:** Notification sent WITH button (label available)
+- If label fetch fails for any reason, notification still sends (just without button)
+
+**Timeline:**
+1. Order created → Status: `pending` → Notification sent (no label button)
+2. Payment confirmed → Status: `ready_to_ship` → New notification sent WITH label button
+3. You pack the order → Status: `packed` → Label still available if needed
 
 ### 🔍 Error Handling
 If the shipping label cannot be fetched:

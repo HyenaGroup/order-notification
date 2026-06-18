@@ -114,10 +114,16 @@ function kv(label, value) {
  */
 export async function notifyOrder(order, shippingLabelUrl = null) {
   const key = `${order.platform}:${order.orderId}`;
+  
+  // CRITICAL: Check and mark as seen IMMEDIATELY to prevent race conditions
+  // Lazada sends multiple webhooks per order (one per item) at the same time
   if (!isNew(key)) {
     console.log(`[notify] skip duplicate ${key}`);
     return false;
   }
+  
+  // Mark as seen RIGHT NOW before any async operations
+  markSeen(key);
   
   // Add shipping label URL to order object if provided
   if (shippingLabelUrl) {
@@ -126,7 +132,6 @@ export async function notifyOrder(order, shippingLabelUrl = null) {
   }
   
   await pushMessages([buildFlexMessage(order)]);
-  markSeen(key);
   console.log(`[notify] sent ${key} (${order.itemCount} items)${shippingLabelUrl ? ' with shipping label' : ''}`);
   return true;
 }

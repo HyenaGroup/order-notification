@@ -170,12 +170,20 @@ app.post('/webhook/lazada', async (req, res) => {
     }
     
     // Fetch shipping label PDF URL for packaging team
+    // Only try for ready_to_ship/packed orders - pending orders don't have labels yet
     let shippingLabelUrl = null;
-    try {
-      shippingLabelUrl = await lazada.getOrderShippingLabel(orderId);
-      console.log(`[lazada] ✓ Shipping label URL obtained`);
-    } catch (err) {
-      console.warn(`[lazada] ⚠ Could not fetch shipping label: ${err.message}`);
+    const orderStatus = String(status || order.status || '').toLowerCase();
+    const hasLabel = ['ready_to_ship', 'packed'].includes(orderStatus);
+    
+    if (hasLabel) {
+      try {
+        shippingLabelUrl = await lazada.getOrderShippingLabel(orderId);
+        console.log(`[lazada] ✓ Shipping label URL obtained`);
+      } catch (err) {
+        console.warn(`[lazada] ⚠ Could not fetch shipping label: ${err.message}`);
+      }
+    } else {
+      console.log(`[lazada] Skipping label fetch for status: ${orderStatus} (not available yet)`);
     }
     
     await notifyOrder(lazada.normalizeLazadaOrder(order, items), shippingLabelUrl);
