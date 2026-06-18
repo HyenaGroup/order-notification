@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.1.2] - 2026-06-18
+
+### ✨ New Feature - Multiple LINE Groups
+
+**Send Notifications to Multiple Groups Simultaneously**
+- ✅ Support comma-separated group IDs in `LINE_TARGET_ID`
+- ✅ Automatic splitting and distribution to all groups
+- ✅ Each group receives same notification with shipping label
+- ✅ Updated `/test-line` endpoint to test all groups
+- ✅ Configuration logging shows all configured groups
+
+**Usage:**
+```
+LINE_TARGET_ID=C_group1,C_group2,C_group3
+```
+
+**Files Modified:**
+- `src/config.js` - Parse comma-separated IDs into array
+- `src/notifier.js` - Loop through all target groups
+- `src/server.js` - Fix test endpoint for multiple groups
+- `.env.example` - Add multiple groups example
+
+**Files Added:**
+- `MULTIPLE-GROUPS.md` - Complete setup guide
+
+---
+
 ## [1.1.1] - 2026-06-18
 
 ### 🐛 Critical Fixes

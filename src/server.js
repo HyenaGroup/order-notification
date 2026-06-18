@@ -30,19 +30,23 @@ app.get('/test-line', async (_req, res) => {
     };
     
     const { pushMessages } = await import('./line.js');
-    await pushMessages([testMessage]);
+    
+    // Send to all configured groups
+    for (const targetId of config.line.targetIds) {
+      await pushMessages([testMessage], targetId);
+    }
     
     res.json({ 
       success: true, 
-      message: 'Test notification sent successfully!',
-      targetId: config.line.targetId 
+      message: `Test notification sent successfully to ${config.line.targetIds.length} group(s)!`,
+      groups: config.line.targetIds.map(id => id.substring(0, 5) + '...')
     });
   } catch (err) {
     console.error('[test] ❌ LINE test failed:', err.message);
     res.status(500).json({ 
       success: false, 
       error: err.message,
-      targetId: config.line.targetId,
+      groups: config.line.targetIds,
       hint: 'Check Railway logs for detailed error information'
     });
   }
